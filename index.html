@@ -1,0 +1,1804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corn Trait Introgression Calculator</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --primary-light: #60ad5e;
+            --primary-dark: #005005;
+            --secondary: #1565c0;
+            --background: #f5f5f5;
+            --surface: #ffffff;
+            --text: #212121;
+            --text-secondary: #757575;
+            --border: #e0e0e0;
+            --warning: #f57c00;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        header h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        header p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary-light);
+        }
+
+        .input-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .input-group .hint {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        input[type="number"],
+        input[type="range"],
+        select {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
+        }
+
+        input[type="range"] {
+            padding: 0;
+            height: 6px;
+            -webkit-appearance: none;
+            background: var(--border);
+            border-radius: 3px;
+            border: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .range-value {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+        }
+
+        .range-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .range-row input[type="range"] {
+            flex: 1;
+        }
+
+        .results-section {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .summary-card.secondary {
+            background: linear-gradient(135deg, #42a5f5 0%, var(--secondary) 100%);
+        }
+
+        .summary-card.warning {
+            background: linear-gradient(135deg, #ffb74d 0%, var(--warning) 100%);
+        }
+
+        .summary-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .summary-card .label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-top: 0.25rem;
+        }
+
+        .generation-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .generation-table th,
+        .generation-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .generation-table th {
+            background: var(--background);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .generation-table tr:hover {
+            background: rgba(46, 125, 50, 0.05);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-backcross {
+            background: #e3f2fd;
+            color: var(--secondary);
+        }
+
+        .badge-selfing {
+            background: #e8f5e9;
+            color: var(--primary);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1400px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-container {
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 1rem;
+            min-height: 400px;
+        }
+
+        .chart-container.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+
+        .chart-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            border-color: var(--primary);
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .flowchart-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .flow-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            min-width: 80px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .flow-node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .flow-node.cross {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 2px solid var(--secondary);
+        }
+
+        .flow-node.self {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border: 2px solid var(--primary);
+        }
+
+        .flow-node .gen-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .flow-node .gen-recovery {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .flow-node .gen-pop {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .flow-arrow {
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--background);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid var(--secondary);
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .info-box strong {
+            color: var(--secondary);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .maize-params {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            background: var(--background);
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+
+        .maize-params strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Corn Trait Introgression Calculator</h1>
+        <p>Calculate population sizes and backcross generations for maize breeding programs</p>
+    </header>
+
+    <div class="container">
+        <div class="main-grid">
+            <!-- Input Panel -->
+            <div class="card">
+                <h2 class="card-title">Calculation Mode</h2>
+                
+                <div class="tabs" style="margin-bottom: 1.5rem;">
+                    <button class="tab active" id="modeTab1" onclick="setCalculationMode('target')">Target Recovery Mode</button>
+                    <button class="tab" id="modeTab2" onclick="setCalculationMode('fixed')">Fixed Population Mode</button>
+                </div>
+
+                <div id="modeDescription" class="info-box" style="margin-bottom: 1rem;">
+                    <strong>Target Recovery Mode:</strong> Calculate the population size needed to achieve your target RP recovery rate.
+                </div>
+
+                <h3 class="card-title" style="margin-top: 1rem;">Common Parameters</h3>
+                
+                <div class="input-group">
+                    <label for="numTraits">Number of Traits to Introgress</label>
+                    <div class="range-row">
+                        <input type="range" id="numTraits" min="1" max="10" value="2">
+                        <span class="range-value" id="numTraitsValue">2</span>
+                    </div>
+                    <p class="hint">Independent (unlinked) traits from donor parent</p>
+                </div>
+
+                <div class="input-group">
+                    <label for="initialSimilarity">Initial DP-RP Genetic Similarity (%)</label>
+                    <div class="range-row">
+                        <input type="range" id="initialSimilarity" min="0" max="80" value="0">
+                        <span class="range-value" id="initialSimilarityValue">0%</span>
+                    </div>
+                    <p class="hint">Pre-existing genetic similarity between parents</p>
+                </div>
+
+                <div class="input-group">
+                    <label for="confidence">Confidence Level</label>
+                    <select id="confidence">
+                        <option value="0.90">90%</option>
+                        <option value="0.95" selected>95%</option>
+                        <option value="0.99">99%</option>
+                    </select>
+                    <p class="hint">Probability of finding desired individuals</p>
+                </div>
+
+                <div class="input-group">
+                    <label for="mapLength">Total Genetic Map Length (cM)</label>
+                    <input type="number" id="mapLength" min="1200" max="2000" value="1650" step="50">
+                    <p class="hint">Maize default: ~1,650 cM across 10 chromosomes</p>
+                </div>
+
+                <!-- Target Recovery Mode Inputs -->
+                <div id="targetModeInputs">
+                    <h3 class="card-title" style="margin-top: 1.5rem; border-color: #1565c0;">Target Recovery Mode</h3>
+                    <div class="input-group">
+                        <label for="targetRecovery">Target RP Genome Recovery (%)</label>
+                        <div class="range-row">
+                            <input type="range" id="targetRecovery" min="80" max="99" value="90">
+                            <span class="range-value" id="targetRecoveryValue">90%</span>
+                        </div>
+                        <p class="hint">Desired recurrent parent genome percentage</p>
+                    </div>
+                </div>
+
+                <!-- Fixed Population Mode Inputs -->
+                <div id="fixedModeInputs" style="display: none;">
+                    <h3 class="card-title" style="margin-top: 1.5rem; border-color: #f57c00;">Fixed Population Mode</h3>
+                    <div class="input-group">
+                        <label for="fixedPopulation">Population Size per Generation</label>
+                        <input type="number" id="fixedPopulation" min="10" max="10000" value="200" step="10">
+                        <p class="hint">Number of plants you can grow per generation</p>
+                    </div>
+                    <div class="input-group">
+                        <label for="selectionIntensity">Selection Intensity (top %)</label>
+                        <div class="range-row">
+                            <input type="range" id="selectionIntensity" min="1" max="20" value="5">
+                            <span class="range-value" id="selectionIntensityValue">5%</span>
+                        </div>
+                        <p class="hint">Select top X% of individuals each generation</p>
+                    </div>
+                </div>
+
+                <div class="maize-params">
+                    <strong>Maize Genome:</strong> 10 chromosomes, ~1,500-1,800 cM total genetic length. 
+                    Effective segments (L) = <span id="effectiveSegments">26.5</span>
+                </div>
+
+                <div class="export-buttons">
+                    <button class="btn btn-primary" onclick="exportCSV()">Export CSV</button>
+                    <button class="btn btn-secondary" onclick="copyResults()">Copy Results</button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section">
+                <!-- Summary Cards -->
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="value" id="summaryGenerations">4</div>
+                        <div class="label">Backcross Generations</div>
+                    </div>
+                    <div class="summary-card secondary">
+                        <div class="value" id="summaryBCPopulation">--</div>
+                        <div class="label">BCnF1 Population (each)</div>
+                    </div>
+                    <div class="summary-card warning">
+                        <div class="value" id="summaryF2Population">--</div>
+                        <div class="label">Final F2 Population</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="value" id="summaryTotalPop">--</div>
+                        <div class="label">Total Plants Needed</div>
+                    </div>
+                </div>
+
+                <!-- Info Box -->
+                <div class="info-box">
+                    <strong>Selection Strategy:</strong> 
+                    <span id="strategyText">BCnF1 generations use background selection to maximize RP recovery. The final F2 uses foreground selection to fix all traits homozygous.</span>
+                </div>
+
+                <!-- Breeding Scheme Flowchart -->
+                <div class="card">
+                    <h3 class="card-title">Breeding Scheme</h3>
+                    <div class="flowchart-container" id="flowchart">
+                        <!-- Generated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Generation Table -->
+                <div class="card">
+                    <h3 class="card-title">Generation-by-Generation Breakdown</h3>
+                    <div style="overflow-x: auto;">
+                        <table class="generation-table" id="generationTable">
+                            <thead>
+                                <tr>
+                                    <th>Generation</th>
+                                    <th>Type</th>
+                                    <th>Selection Goal</th>
+                                    <th>Expected Recovery</th>
+                                    <th>Std Dev (σ)</th>
+                                    <th>Population Size</th>
+                                </tr>
+                            </thead>
+                            <tbody id="generationTableBody">
+                                <!-- Generated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="charts-grid">
+                    <!-- Recovery Progression Chart -->
+                    <div class="chart-container">
+                        <div class="chart-title">RP Recovery Progression</div>
+                        <div class="chart-subtitle">Expected recovery with confidence bands across generations</div>
+                        <div id="recoveryChart"></div>
+                    </div>
+
+                    <!-- Population Size Chart -->
+                    <div class="chart-container">
+                        <div class="chart-title">Population Size by Generation</div>
+                        <div class="chart-subtitle">Required population for each selection stage</div>
+                        <div id="populationChart"></div>
+                    </div>
+
+                    <!-- Heatmap -->
+                    <div class="chart-container">
+                        <div class="chart-title">Population Size Heatmap</div>
+                        <div class="chart-subtitle">Total population vs. traits and target recovery</div>
+                        <div id="heatmapChart"></div>
+                    </div>
+
+                    <!-- Sensitivity Chart -->
+                    <div class="chart-container">
+                        <div class="chart-title">Sensitivity Analysis</div>
+                        <div class="chart-subtitle">How parameters affect total population size</div>
+                        <div class="tabs">
+                            <button class="tab active" onclick="updateSensitivity('traits')">By Traits</button>
+                            <button class="tab" onclick="updateSensitivity('recovery')">By Recovery</button>
+                            <button class="tab" onclick="updateSensitivity('similarity')">By Similarity</button>
+                        </div>
+                        <div id="sensitivityChart"></div>
+                    </div>
+
+                    <!-- 3D Surface -->
+                    <div class="chart-container full-width">
+                        <div class="chart-title">3D Parameter Interaction Surface</div>
+                        <div class="chart-subtitle">Explore how multiple parameters jointly affect population size</div>
+                        <div class="tabs">
+                            <button class="tab active" onclick="update3DSurface('traits-recovery')">Traits × Recovery</button>
+                            <button class="tab" onclick="update3DSurface('traits-similarity')">Traits × Similarity</button>
+                            <button class="tab" onclick="update3DSurface('recovery-similarity')">Recovery × Similarity</button>
+                        </div>
+                        <div id="surface3DChart"></div>
+                    </div>
+
+                    <!-- Population vs Generations Trade-off Chart -->
+                    <div class="chart-container full-width">
+                        <div class="chart-title">Population Size vs. Generations Trade-off</div>
+                        <div class="chart-subtitle">Larger populations enable higher recovery with fewer backcross generations</div>
+                        <div id="tradeoffChart"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Corn Trait Introgression Calculator | Based on Hospital et al. (1992) and Visscher et al. (1996)</p>
+        <p>Maize genome parameters: 10 chromosomes, ~1,650 cM genetic map length</p>
+    </footer>
+
+    <script>
+        // ============================================
+        // MAIZE-SPECIFIC CONSTANTS
+        // ============================================
+        const MAIZE_CHROMOSOMES = 10;
+        const DEFAULT_MAP_LENGTH = 1650; // cM
+
+        // ============================================
+        // CALCULATION MODE STATE
+        // ============================================
+        let calculationMode = 'target'; // 'target' or 'fixed'
+
+        function setCalculationMode(mode) {
+            calculationMode = mode;
+            
+            // Update tabs
+            document.getElementById('modeTab1').classList.toggle('active', mode === 'target');
+            document.getElementById('modeTab2').classList.toggle('active', mode === 'fixed');
+            
+            // Update visibility
+            document.getElementById('targetModeInputs').style.display = mode === 'target' ? 'block' : 'none';
+            document.getElementById('fixedModeInputs').style.display = mode === 'fixed' ? 'block' : 'none';
+            
+            // Update description
+            const desc = document.getElementById('modeDescription');
+            if (mode === 'target') {
+                desc.innerHTML = '<strong>Target Recovery Mode:</strong> Calculate the population size needed to achieve your target RP recovery rate.';
+                desc.style.borderColor = '#1565c0';
+            } else {
+                desc.innerHTML = '<strong>Fixed Population Mode:</strong> Given your population constraint, calculate achievable recovery and optimal generations. Larger populations can achieve higher recovery with fewer backcrosses!';
+                desc.style.borderColor = '#f57c00';
+            }
+            
+            updateAll();
+        }
+
+        // ============================================
+        // CALCULATION ENGINE
+        // ============================================
+
+        function getEffectiveSegments(mapLength) {
+            return (mapLength / 100) + MAIZE_CHROMOSOMES;
+        }
+
+        function expectedRecovery(n, S0) {
+            // Expected RP recovery after n backcrosses
+            // R_n = S_0 + (1 - S_0) * (1 - 0.5^n)
+            return S0 + (1 - S0) * (1 - Math.pow(0.5, n));
+        }
+
+        function recoveryVariance(n, S0, L) {
+            // Variance of RP recovery
+            // Var(R_n) ≈ (1 - S_0)² × 0.5^(2n) × (1 - 0.5^n)² / L
+            if (n === 0) return 0;
+            const term1 = Math.pow(1 - S0, 2);
+            const term2 = Math.pow(0.5, 2 * n);
+            const term3 = Math.pow(1 - Math.pow(0.5, n), 2);
+            return (term1 * term2 * term3) / L;
+        }
+
+        function recoveryStdDev(n, S0, L) {
+            return Math.sqrt(recoveryVariance(n, S0, L));
+        }
+
+        // Standard normal CDF approximation
+        function normalCDF(x) {
+            const a1 =  0.254829592;
+            const a2 = -0.284496736;
+            const a3 =  1.421413741;
+            const a4 = -1.453152027;
+            const a5 =  1.061405429;
+            const p  =  0.3275911;
+
+            const sign = x < 0 ? -1 : 1;
+            x = Math.abs(x) / Math.sqrt(2);
+
+            const t = 1.0 / (1.0 + p * x);
+            const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+
+            return 0.5 * (1.0 + sign * y);
+        }
+
+        // Inverse normal CDF (quantile function) approximation
+        function normalQuantile(p) {
+            // Approximation for inverse normal CDF
+            if (p <= 0) return -Infinity;
+            if (p >= 1) return Infinity;
+            if (p === 0.5) return 0;
+            
+            // Rational approximation
+            const a = [
+                -3.969683028665376e+01,
+                 2.209460984245205e+02,
+                -2.759285104469687e+02,
+                 1.383577518672690e+02,
+                -3.066479806614716e+01,
+                 2.506628277459239e+00
+            ];
+            const b = [
+                -5.447609879822406e+01,
+                 1.615858368580409e+02,
+                -1.556989798598866e+02,
+                 6.680131188771972e+01,
+                -1.328068155288572e+01
+            ];
+            const c = [
+                -7.784894002430293e-03,
+                -3.223964580411365e-01,
+                -2.400758277161838e+00,
+                -2.549732539343734e+00,
+                 4.374664141464968e+00,
+                 2.938163982698783e+00
+            ];
+            const d = [
+                 7.784695709041462e-03,
+                 3.224671290700398e-01,
+                 2.445134137142996e+00,
+                 3.754408661907416e+00
+            ];
+            
+            const pLow = 0.02425;
+            const pHigh = 1 - pLow;
+            let q, r;
+            
+            if (p < pLow) {
+                q = Math.sqrt(-2 * Math.log(p));
+                return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
+                       ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+            } else if (p <= pHigh) {
+                q = p - 0.5;
+                r = q * q;
+                return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q /
+                       (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+            } else {
+                q = Math.sqrt(-2 * Math.log(1 - p));
+                return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
+                        ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+            }
+        }
+
+        function populationSizeBCnF1(targetRecovery, n, S0, L, confidence) {
+            // Population size for backcross generation to find individuals above target recovery
+            const mean = expectedRecovery(n, S0);
+            const std = recoveryStdDev(n, S0, L);
+            
+            if (std === 0 || targetRecovery <= mean) {
+                return 1; // Target already achieved on average
+            }
+
+            const z = (targetRecovery - mean) / std;
+            const pAbove = 1 - normalCDF(z);
+            
+            if (pAbove <= 0 || pAbove >= 1) {
+                return pAbove <= 0 ? 10000 : 1; // Cap at reasonable values
+            }
+
+            const N = Math.log(1 - confidence) / Math.log(1 - pAbove);
+            return Math.max(1, Math.ceil(N));
+        }
+
+        function populationSizeBCnF2(numTraits, confidence) {
+            // Population size for selfing generation to fix all traits
+            // P_fixed = (0.25)^t
+            const pFixed = Math.pow(0.25, numTraits);
+            const N = Math.log(1 - confidence) / Math.log(1 - pFixed);
+            return Math.max(1, Math.ceil(N));
+        }
+
+        function minBackcrossGenerations(targetRecovery, S0) {
+            // Minimum backcross generations to reach target recovery (expected value)
+            if (targetRecovery <= S0) return 0;
+            
+            const ratio = (1 - targetRecovery) / (1 - S0);
+            if (ratio <= 0) return 10; // Cap
+            
+            const n = Math.log(ratio) / Math.log(0.5);
+            return Math.max(1, Math.ceil(n));
+        }
+
+        // ============================================
+        // FIXED POPULATION MODE CALCULATIONS
+        // ============================================
+
+        function achievableRecoveryWithPopulation(n, S0, L, populationSize, selectionPct) {
+            // Given a population size and selection intensity, what recovery can we achieve?
+            // We select the top X% of individuals
+            const mean = expectedRecovery(n, S0);
+            const std = recoveryStdDev(n, S0, L);
+            
+            if (std === 0) return mean;
+            
+            // The expected value of the top X% of a normal distribution
+            // For selection intensity i (proportion selected), the selection differential is:
+            // i = selectionPct / 100
+            // z = normalQuantile(1 - i) gives the truncation point
+            // The mean of the selected portion is: mean + std * (pdf(z) / i)
+            
+            const i = selectionPct / 100;
+            const z = normalQuantile(1 - i);
+            
+            // PDF of standard normal at z
+            const pdf_z = Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI);
+            
+            // Selection differential (in standard deviation units)
+            const selectionDifferential = pdf_z / i;
+            
+            // Achievable recovery (mean of selected individuals)
+            const achievable = mean + std * selectionDifferential;
+            
+            return Math.min(achievable, 1.0); // Cap at 100%
+        }
+
+        function calculateFixedPopulationScheme(params) {
+            const { numTraits, initialSimilarity, confidence, mapLength, fixedPopulation, selectionIntensity } = params;
+            const S0 = initialSimilarity / 100;
+            const L = getEffectiveSegments(mapLength);
+            const popSize = fixedPopulation;
+            const selPct = selectionIntensity;
+            
+            const generations = [];
+            let currentRecovery = S0 + (1 - S0) * 0.5; // F1 recovery
+            
+            // Determine how many backcrosses we can do and what recovery we achieve
+            // Continue backcrossing until we reach 90%+ or diminishing returns
+            const targetRecovery = 0.90; // Default target for comparison
+            let n = 0;
+            const maxGenerations = 6;
+            
+            while (n < maxGenerations) {
+                n++;
+                const expRec = expectedRecovery(n, S0);
+                const std = recoveryStdDev(n, S0, L);
+                const achievable = achievableRecoveryWithPopulation(n, S0, L, popSize, selPct);
+                
+                generations.push({
+                    name: `BC${n}F1`,
+                    type: 'backcross',
+                    selectionGoal: `Background selection (top ${selPct}%)`,
+                    expectedRecovery: expRec,
+                    achievableRecovery: achievable,
+                    stdDev: std,
+                    populationSize: popSize,
+                    generation: n
+                });
+                
+                // Check if we've reached target or if gains are minimal
+                if (achievable >= targetRecovery || (n > 1 && achievable - currentRecovery < 0.02)) {
+                    break;
+                }
+                currentRecovery = achievable;
+            }
+            
+            // Determine F2 population needs
+            const f2Required = populationSizeBCnF2(numTraits, confidence);
+            const f2Generations = Math.ceil(f2Required / popSize);
+            const finalRecovery = generations[generations.length - 1].achievableRecovery;
+            
+            // Add selfing generation(s)
+            if (f2Generations === 1) {
+                generations.push({
+                    name: `BC${n}F2`,
+                    type: 'selfing',
+                    selectionGoal: 'Foreground selection (fix traits)',
+                    expectedRecovery: finalRecovery,
+                    achievableRecovery: finalRecovery,
+                    stdDev: 0,
+                    populationSize: popSize,
+                    generation: n,
+                    note: f2Required <= popSize ? 'Sufficient' : `Need ${f2Required}, have ${popSize}`
+                });
+            } else {
+                generations.push({
+                    name: `BC${n}F2`,
+                    type: 'selfing',
+                    selectionGoal: `Foreground selection (${f2Generations} cycles needed)`,
+                    expectedRecovery: finalRecovery,
+                    achievableRecovery: finalRecovery,
+                    stdDev: 0,
+                    populationSize: popSize,
+                    generation: n,
+                    note: `Need ${f2Required} plants, will require ${f2Generations} selection cycles`
+                });
+            }
+            
+            const totalPopulation = generations.reduce((sum, g) => sum + g.populationSize, 0);
+            
+            return {
+                generations,
+                totalPopulation,
+                minBackcrosses: n,
+                f2Population: popSize,
+                f2Required: f2Required,
+                f2Cycles: f2Generations,
+                achievedRecovery: finalRecovery,
+                avgBCPopulation: popSize,
+                mode: 'fixed'
+            };
+        }
+
+        function calculateBreedingScheme(params) {
+            const { numTraits, targetRecovery, initialSimilarity, confidence, mapLength } = params;
+            const S0 = initialSimilarity / 100;
+            const target = targetRecovery / 100;
+            const L = getEffectiveSegments(mapLength);
+            
+            const minGen = minBackcrossGenerations(target, S0);
+            const generations = [];
+            
+            let totalPopulation = 0;
+            
+            // Add backcross generations
+            for (let n = 1; n <= minGen; n++) {
+                const expRec = expectedRecovery(n, S0);
+                const std = recoveryStdDev(n, S0, L);
+                
+                // For intermediate generations, we select for above-average recovery
+                // For the final BC generation, we select for target recovery
+                const selectionTarget = n < minGen ? expRec + std : target;
+                const popSize = populationSizeBCnF1(selectionTarget, n, S0, L, confidence);
+                
+                generations.push({
+                    name: `BC${n}F1`,
+                    type: 'backcross',
+                    selectionGoal: 'Background selection (maximize RP)',
+                    expectedRecovery: expRec,
+                    achievableRecovery: expRec,
+                    stdDev: std,
+                    populationSize: popSize,
+                    generation: n
+                });
+                
+                totalPopulation += popSize;
+            }
+            
+            // Add final selfing generation
+            const finalExpRec = expectedRecovery(minGen, S0);
+            const f2PopSize = populationSizeBCnF2(numTraits, confidence);
+            
+            generations.push({
+                name: `BC${minGen}F2`,
+                type: 'selfing',
+                selectionGoal: 'Foreground selection (fix traits)',
+                expectedRecovery: finalExpRec,
+                achievableRecovery: finalExpRec,
+                stdDev: 0,
+                populationSize: f2PopSize,
+                generation: minGen
+            });
+            
+            totalPopulation += f2PopSize;
+            
+            return {
+                generations,
+                totalPopulation,
+                minBackcrosses: minGen,
+                f2Population: f2PopSize,
+                avgBCPopulation: generations.filter(g => g.type === 'backcross').reduce((sum, g) => sum + g.populationSize, 0) / minGen,
+                mode: 'target'
+            };
+        }
+
+        // ============================================
+        // UI UPDATE FUNCTIONS
+        // ============================================
+
+        function getParams() {
+            const params = {
+                numTraits: parseInt(document.getElementById('numTraits').value),
+                targetRecovery: parseInt(document.getElementById('targetRecovery').value),
+                initialSimilarity: parseInt(document.getElementById('initialSimilarity').value),
+                confidence: parseFloat(document.getElementById('confidence').value),
+                mapLength: parseInt(document.getElementById('mapLength').value),
+                fixedPopulation: parseInt(document.getElementById('fixedPopulation').value),
+                selectionIntensity: parseInt(document.getElementById('selectionIntensity').value),
+                mode: calculationMode
+            };
+            return params;
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        function updateAll() {
+            const params = getParams();
+            let results;
+            
+            if (calculationMode === 'fixed') {
+                results = calculateFixedPopulationScheme(params);
+            } else {
+                results = calculateBreedingScheme(params);
+            }
+            
+            // Update effective segments display
+            const L = getEffectiveSegments(params.mapLength);
+            document.getElementById('effectiveSegments').textContent = L.toFixed(1);
+            
+            // Update summary cards based on mode
+            document.getElementById('summaryGenerations').textContent = results.minBackcrosses;
+            
+            if (calculationMode === 'fixed') {
+                document.getElementById('summaryBCPopulation').textContent = formatNumber(params.fixedPopulation);
+                document.getElementById('summaryF2Population').textContent = results.f2Cycles > 1 
+                    ? `${results.f2Cycles} cycles` 
+                    : formatNumber(params.fixedPopulation);
+                document.getElementById('summaryTotalPop').textContent = formatNumber(results.totalPopulation);
+                
+                // Update strategy text for fixed mode
+                const achievedPct = (results.achievedRecovery * 100).toFixed(1);
+                document.getElementById('strategyText').innerHTML = 
+                    `<strong>Achievable Recovery: ${achievedPct}%</strong> with ${params.fixedPopulation} plants/generation. ` +
+                    `Selecting top ${params.selectionIntensity}% each generation. ` +
+                    (results.f2Cycles > 1 
+                        ? `F2 requires ${results.f2Cycles} selection cycles (need ${results.f2Required} plants for ${params.numTraits} traits).`
+                        : `F2 population sufficient for ${params.numTraits} trait(s).`);
+            } else {
+                document.getElementById('summaryBCPopulation').textContent = formatNumber(Math.round(results.avgBCPopulation));
+                document.getElementById('summaryF2Population').textContent = formatNumber(results.f2Population);
+                document.getElementById('summaryTotalPop').textContent = formatNumber(results.totalPopulation);
+                
+                // Update strategy text for target mode
+                document.getElementById('strategyText').textContent = 
+                    'BCnF1 generations use background selection to maximize RP recovery. The final F2 uses foreground selection to fix all traits homozygous.';
+            }
+            
+            // Update table
+            updateGenerationTable(results.generations, calculationMode);
+            
+            // Update flowchart
+            updateFlowchart(results.generations, calculationMode);
+            
+            // Update all charts
+            updateRecoveryChart(params, results);
+            updatePopulationChart(results);
+            updateHeatmap(params);
+            updateSensitivityChart(params);
+            update3DSurfaceChart(params);
+            updateMainTradeoffChart(params);
+        }
+
+        function updateGenerationTable(generations, mode) {
+            const tbody = document.getElementById('generationTableBody');
+            const thead = document.querySelector('#generationTable thead tr');
+            tbody.innerHTML = '';
+            
+            // Update header based on mode
+            if (mode === 'fixed') {
+                thead.innerHTML = `
+                    <th>Generation</th>
+                    <th>Type</th>
+                    <th>Selection Goal</th>
+                    <th>Expected Recovery</th>
+                    <th>Achievable Recovery</th>
+                    <th>Population Size</th>
+                `;
+            } else {
+                thead.innerHTML = `
+                    <th>Generation</th>
+                    <th>Type</th>
+                    <th>Selection Goal</th>
+                    <th>Expected Recovery</th>
+                    <th>Std Dev (σ)</th>
+                    <th>Population Size</th>
+                `;
+            }
+            
+            generations.forEach(gen => {
+                const row = document.createElement('tr');
+                if (mode === 'fixed') {
+                    const achievable = gen.achievableRecovery ? (gen.achievableRecovery * 100).toFixed(1) + '%' : '—';
+                    const highlight = gen.achievableRecovery && gen.achievableRecovery > gen.expectedRecovery ? 
+                        'style="color: #2e7d32; font-weight: bold;"' : '';
+                    row.innerHTML = `
+                        <td><strong>${gen.name}</strong></td>
+                        <td><span class="badge ${gen.type === 'backcross' ? 'badge-backcross' : 'badge-selfing'}">${gen.type === 'backcross' ? 'Backcross' : 'Selfing'}</span></td>
+                        <td>${gen.selectionGoal}</td>
+                        <td>${(gen.expectedRecovery * 100).toFixed(1)}%</td>
+                        <td ${highlight}>${achievable}</td>
+                        <td><strong>${formatNumber(gen.populationSize)}</strong>${gen.note ? '<br><small style="color:#757575;">' + gen.note + '</small>' : ''}</td>
+                    `;
+                } else {
+                    row.innerHTML = `
+                        <td><strong>${gen.name}</strong></td>
+                        <td><span class="badge ${gen.type === 'backcross' ? 'badge-backcross' : 'badge-selfing'}">${gen.type === 'backcross' ? 'Backcross' : 'Selfing'}</span></td>
+                        <td>${gen.selectionGoal}</td>
+                        <td>${(gen.expectedRecovery * 100).toFixed(1)}%</td>
+                        <td>${gen.type === 'backcross' ? (gen.stdDev * 100).toFixed(2) + '%' : '—'}</td>
+                        <td><strong>${formatNumber(gen.populationSize)}</strong></td>
+                    `;
+                }
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateFlowchart(generations, mode) {
+            const container = document.getElementById('flowchart');
+            container.innerHTML = '';
+            
+            // Add F1 node
+            const f1Node = document.createElement('div');
+            f1Node.className = 'flow-node cross';
+            f1Node.innerHTML = `
+                <div class="gen-name">F1</div>
+                <div class="gen-recovery">RP × DP</div>
+            `;
+            container.appendChild(f1Node);
+            
+            generations.forEach((gen, i) => {
+                // Add arrow
+                const arrow = document.createElement('div');
+                arrow.className = 'flow-arrow';
+                arrow.textContent = '→';
+                container.appendChild(arrow);
+                
+                // Add generation node
+                const node = document.createElement('div');
+                node.className = `flow-node ${gen.type === 'backcross' ? 'cross' : 'self'}`;
+                
+                // Show achievable recovery in fixed mode, expected in target mode
+                const displayRecovery = mode === 'fixed' && gen.achievableRecovery 
+                    ? gen.achievableRecovery 
+                    : gen.expectedRecovery;
+                const recoveryLabel = mode === 'fixed' && gen.type === 'backcross' 
+                    ? 'achievable' 
+                    : 'expected';
+                
+                node.innerHTML = `
+                    <div class="gen-name">${gen.name}</div>
+                    <div class="gen-recovery">${(displayRecovery * 100).toFixed(1)}% RP</div>
+                    <div class="gen-pop">N = ${formatNumber(gen.populationSize)}</div>
+                `;
+                node.title = `${gen.selectionGoal}\nPopulation: ${gen.populationSize}\n${recoveryLabel}: ${(displayRecovery * 100).toFixed(1)}%`;
+                container.appendChild(node);
+            });
+        }
+
+        // ============================================
+        // CHART FUNCTIONS
+        // ============================================
+
+        function updateRecoveryChart(params, results) {
+            const S0 = params.initialSimilarity / 100;
+            const L = getEffectiveSegments(params.mapLength);
+            const target = params.targetRecovery / 100;
+            const isFixedMode = calculationMode === 'fixed';
+            
+            const generations = [];
+            const expected = [];
+            const achievable = [];
+            const upper1 = [];
+            const lower1 = [];
+            const upper2 = [];
+            const lower2 = [];
+            
+            // Start with F1 (n=0, but we show it as generation 0.5 for display)
+            for (let n = 0; n <= results.minBackcrosses + 1; n++) {
+                const genLabel = n === 0 ? 'F1' : `BC${n}F1`;
+                generations.push(genLabel);
+                
+                const exp = n === 0 ? (S0 + (1 - S0) * 0.5) : expectedRecovery(n, S0);
+                const std = n === 0 ? recoveryStdDev(1, S0, L) * 0.7 : recoveryStdDev(n, S0, L);
+                
+                expected.push(exp * 100);
+                upper1.push((exp + std) * 100);
+                lower1.push((exp - std) * 100);
+                upper2.push((exp + 2 * std) * 100);
+                lower2.push((exp - 2 * std) * 100);
+                
+                // Calculate achievable recovery for fixed mode
+                if (isFixedMode && n > 0) {
+                    const ach = achievableRecoveryWithPopulation(n, S0, L, params.fixedPopulation, params.selectionIntensity);
+                    achievable.push(ach * 100);
+                } else {
+                    achievable.push(exp * 100);
+                }
+            }
+            
+            const traces = [
+                {
+                    x: generations,
+                    y: upper2,
+                    fill: 'none',
+                    mode: 'lines',
+                    line: { color: 'rgba(46, 125, 50, 0.1)', width: 0 },
+                    showlegend: false,
+                    hoverinfo: 'skip'
+                },
+                {
+                    x: generations,
+                    y: lower2,
+                    fill: 'tonexty',
+                    mode: 'lines',
+                    line: { color: 'rgba(46, 125, 50, 0.1)', width: 0 },
+                    fillcolor: 'rgba(46, 125, 50, 0.1)',
+                    name: '±2σ',
+                    hoverinfo: 'skip'
+                },
+                {
+                    x: generations,
+                    y: upper1,
+                    fill: 'none',
+                    mode: 'lines',
+                    line: { color: 'rgba(46, 125, 50, 0.2)', width: 0 },
+                    showlegend: false,
+                    hoverinfo: 'skip'
+                },
+                {
+                    x: generations,
+                    y: lower1,
+                    fill: 'tonexty',
+                    mode: 'lines',
+                    line: { color: 'rgba(46, 125, 50, 0.2)', width: 0 },
+                    fillcolor: 'rgba(46, 125, 50, 0.2)',
+                    name: '±1σ',
+                    hoverinfo: 'skip'
+                },
+                {
+                    x: generations,
+                    y: expected,
+                    mode: 'lines+markers',
+                    line: { color: '#757575', width: 2, dash: isFixedMode ? 'dot' : 'solid' },
+                    marker: { size: 6 },
+                    name: 'Expected (mean)'
+                }
+            ];
+            
+            // Add achievable recovery line in fixed mode
+            if (isFixedMode) {
+                traces.push({
+                    x: generations,
+                    y: achievable,
+                    mode: 'lines+markers',
+                    line: { color: '#2e7d32', width: 3 },
+                    marker: { size: 10, symbol: 'diamond' },
+                    name: `Achievable (top ${params.selectionIntensity}%)`
+                });
+            }
+            
+            // Target line
+            traces.push({
+                x: generations,
+                y: Array(generations.length).fill(target * 100),
+                mode: 'lines',
+                line: { color: '#f57c00', width: 2, dash: 'dash' },
+                name: 'Target (90%)'
+            });
+            
+            const layout = {
+                margin: { t: 20, r: 20, b: 50, l: 60 },
+                xaxis: { title: 'Generation' },
+                yaxis: { title: 'RP Recovery (%)', range: [Math.max(0, S0 * 100 - 10), 100] },
+                legend: { x: 0.02, y: 0.98, bgcolor: 'rgba(255,255,255,0.8)' },
+                hovermode: 'x unified'
+            };
+            
+            Plotly.newPlot('recoveryChart', traces, layout, { responsive: true });
+        }
+
+        function updatePopulationChart(results) {
+            const generations = results.generations.map(g => g.name);
+            const populations = results.generations.map(g => g.populationSize);
+            const colors = results.generations.map(g => g.type === 'backcross' ? '#1565c0' : '#2e7d32');
+            
+            const trace = {
+                x: generations,
+                y: populations,
+                type: 'bar',
+                marker: { color: colors },
+                text: populations.map(p => formatNumber(p)),
+                textposition: 'outside',
+                hovertemplate: '%{x}<br>Population: %{y:,}<extra></extra>'
+            };
+            
+            const layout = {
+                margin: { t: 30, r: 20, b: 50, l: 60 },
+                xaxis: { title: 'Generation' },
+                yaxis: { title: 'Population Size', type: 'log' },
+                showlegend: false
+            };
+            
+            Plotly.newPlot('populationChart', [trace], layout, { responsive: true });
+        }
+
+        function updateHeatmap(params) {
+            const traits = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+            const recoveries = [80, 82, 84, 86, 88, 90, 92, 94, 96, 98];
+            
+            const z = [];
+            for (let r of recoveries) {
+                const row = [];
+                for (let t of traits) {
+                    const testParams = { ...params, numTraits: t, targetRecovery: r };
+                    const result = calculateBreedingScheme(testParams);
+                    row.push(Math.log10(result.totalPopulation));
+                }
+                z.push(row);
+            }
+            
+            const trace = {
+                x: traits,
+                y: recoveries,
+                z: z,
+                type: 'heatmap',
+                colorscale: [
+                    [0, '#e8f5e9'],
+                    [0.25, '#a5d6a7'],
+                    [0.5, '#66bb6a'],
+                    [0.75, '#43a047'],
+                    [1, '#1b5e20']
+                ],
+                colorbar: {
+                    title: 'log₁₀(Pop)',
+                    titleside: 'right'
+                },
+                hovertemplate: 'Traits: %{x}<br>Recovery: %{y}%<br>Population: 10^%{z:.2f}<extra></extra>'
+            };
+            
+            // Add marker for current selection
+            const marker = {
+                x: [params.numTraits],
+                y: [params.targetRecovery],
+                mode: 'markers',
+                marker: {
+                    size: 15,
+                    color: 'white',
+                    symbol: 'x',
+                    line: { color: 'black', width: 2 }
+                },
+                showlegend: false,
+                hoverinfo: 'skip'
+            };
+            
+            const layout = {
+                margin: { t: 20, r: 80, b: 50, l: 60 },
+                xaxis: { title: 'Number of Traits', dtick: 1 },
+                yaxis: { title: 'Target Recovery (%)' }
+            };
+            
+            Plotly.newPlot('heatmapChart', [trace, marker], layout, { responsive: true });
+        }
+
+        let currentSensitivityMode = 'traits';
+
+        function updateSensitivity(mode) {
+            currentSensitivityMode = mode;
+            
+            // Update tab styling
+            document.querySelectorAll('#sensitivityChart').forEach(el => {
+                el.parentElement.querySelectorAll('.tab').forEach(tab => {
+                    tab.classList.remove('active');
+                    if (tab.textContent.toLowerCase().includes(mode.substring(0, 4))) {
+                        tab.classList.add('active');
+                    }
+                });
+            });
+            
+            updateSensitivityChart(getParams());
+        }
+
+        function updateSensitivityChart(params) {
+            const traces = [];
+            
+            if (currentSensitivityMode === 'traits') {
+                // Vary traits, show lines for different similarities
+                const similarities = [0, 20, 40, 60];
+                const traits = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                
+                similarities.forEach((sim, i) => {
+                    const pops = traits.map(t => {
+                        const testParams = { ...params, numTraits: t, initialSimilarity: sim };
+                        return calculateBreedingScheme(testParams).totalPopulation;
+                    });
+                    
+                    traces.push({
+                        x: traits,
+                        y: pops,
+                        mode: 'lines+markers',
+                        name: `${sim}% similarity`,
+                        line: { width: 2 }
+                    });
+                });
+                
+                Plotly.newPlot('sensitivityChart', traces, {
+                    margin: { t: 20, r: 20, b: 50, l: 70 },
+                    xaxis: { title: 'Number of Traits', dtick: 1 },
+                    yaxis: { title: 'Total Population', type: 'log' },
+                    legend: { x: 0.02, y: 0.98 },
+                    hovermode: 'x unified'
+                }, { responsive: true });
+                
+            } else if (currentSensitivityMode === 'recovery') {
+                // Vary recovery, show lines for different trait counts
+                const traitCounts = [1, 2, 3, 5];
+                const recoveries = [];
+                for (let r = 80; r <= 98; r += 2) recoveries.push(r);
+                
+                traitCounts.forEach((t, i) => {
+                    const pops = recoveries.map(r => {
+                        const testParams = { ...params, numTraits: t, targetRecovery: r };
+                        return calculateBreedingScheme(testParams).totalPopulation;
+                    });
+                    
+                    traces.push({
+                        x: recoveries,
+                        y: pops,
+                        mode: 'lines+markers',
+                        name: `${t} trait${t > 1 ? 's' : ''}`,
+                        line: { width: 2 }
+                    });
+                });
+                
+                Plotly.newPlot('sensitivityChart', traces, {
+                    margin: { t: 20, r: 20, b: 50, l: 70 },
+                    xaxis: { title: 'Target Recovery (%)', dtick: 2 },
+                    yaxis: { title: 'Total Population', type: 'log' },
+                    legend: { x: 0.02, y: 0.98 },
+                    hovermode: 'x unified'
+                }, { responsive: true });
+                
+            } else {
+                // Vary similarity, show lines for different trait counts
+                const traitCounts = [1, 2, 3, 5];
+                const similarities = [];
+                for (let s = 0; s <= 70; s += 10) similarities.push(s);
+                
+                traitCounts.forEach((t, i) => {
+                    const pops = similarities.map(s => {
+                        const testParams = { ...params, numTraits: t, initialSimilarity: s };
+                        return calculateBreedingScheme(testParams).totalPopulation;
+                    });
+                    
+                    traces.push({
+                        x: similarities,
+                        y: pops,
+                        mode: 'lines+markers',
+                        name: `${t} trait${t > 1 ? 's' : ''}`,
+                        line: { width: 2 }
+                    });
+                });
+                
+                Plotly.newPlot('sensitivityChart', traces, {
+                    margin: { t: 20, r: 20, b: 50, l: 70 },
+                    xaxis: { title: 'Initial Similarity (%)' },
+                    yaxis: { title: 'Total Population', type: 'log' },
+                    legend: { x: 0.98, y: 0.98, xanchor: 'right' },
+                    hovermode: 'x unified'
+                }, { responsive: true });
+            }
+        }
+
+        let current3DMode = 'traits-recovery';
+
+        function update3DSurface(mode) {
+            current3DMode = mode;
+            
+            // Update tab styling
+            const container = document.getElementById('surface3DChart').parentElement;
+            container.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+                const tabMode = tab.textContent.toLowerCase().replace(' × ', '-').replace('traits', 'traits').replace('recovery', 'recovery').replace('similarity', 'similarity');
+                if (mode.includes(tabMode.split('-')[0]) && mode.includes(tabMode.split('-')[1])) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            update3DSurfaceChart(getParams());
+        }
+
+        function update3DSurfaceChart(params) {
+            let xValues, yValues, xTitle, yTitle;
+            
+            if (current3DMode === 'traits-recovery') {
+                xValues = [1, 2, 3, 4, 5, 6, 7, 8];
+                yValues = [80, 82, 84, 86, 88, 90, 92, 94, 96, 98];
+                xTitle = 'Number of Traits';
+                yTitle = 'Target Recovery (%)';
+            } else if (current3DMode === 'traits-similarity') {
+                xValues = [1, 2, 3, 4, 5, 6, 7, 8];
+                yValues = [0, 10, 20, 30, 40, 50, 60, 70];
+                xTitle = 'Number of Traits';
+                yTitle = 'Initial Similarity (%)';
+            } else {
+                xValues = [80, 82, 84, 86, 88, 90, 92, 94, 96];
+                yValues = [0, 10, 20, 30, 40, 50, 60, 70];
+                xTitle = 'Target Recovery (%)';
+                yTitle = 'Initial Similarity (%)';
+            }
+            
+            const z = [];
+            for (let y of yValues) {
+                const row = [];
+                for (let x of xValues) {
+                    let testParams;
+                    if (current3DMode === 'traits-recovery') {
+                        testParams = { ...params, numTraits: x, targetRecovery: y };
+                    } else if (current3DMode === 'traits-similarity') {
+                        testParams = { ...params, numTraits: x, initialSimilarity: y };
+                    } else {
+                        testParams = { ...params, targetRecovery: x, initialSimilarity: y };
+                    }
+                    const result = calculateBreedingScheme(testParams);
+                    row.push(Math.log10(result.totalPopulation));
+                }
+                z.push(row);
+            }
+            
+            const trace = {
+                x: xValues,
+                y: yValues,
+                z: z,
+                type: 'surface',
+                colorscale: [
+                    [0, '#e8f5e9'],
+                    [0.25, '#81c784'],
+                    [0.5, '#4caf50'],
+                    [0.75, '#388e3c'],
+                    [1, '#1b5e20']
+                ],
+                colorbar: {
+                    title: 'log₁₀(Pop)',
+                    titleside: 'right',
+                    len: 0.75
+                },
+                hovertemplate: `${xTitle}: %{x}<br>${yTitle}: %{y}<br>Population: 10^%{z:.2f}<extra></extra>`
+            };
+            
+            const layout = {
+                margin: { t: 20, r: 20, b: 20, l: 20 },
+                scene: {
+                    xaxis: { title: xTitle },
+                    yaxis: { title: yTitle },
+                    zaxis: { title: 'log₁₀(Population)' },
+                    camera: {
+                        eye: { x: 1.5, y: 1.5, z: 1 }
+                    }
+                }
+            };
+            
+            Plotly.newPlot('surface3DChart', [trace], layout, { responsive: true });
+        }
+
+        // ============================================
+        // EXPORT FUNCTIONS
+        // ============================================
+
+        function exportCSV() {
+            const params = getParams();
+            const results = calculateBreedingScheme(params);
+            
+            let csv = 'Generation,Type,Selection Goal,Expected Recovery (%),Std Dev (%),Population Size\n';
+            
+            results.generations.forEach(gen => {
+                csv += `${gen.name},${gen.type},${gen.selectionGoal},${(gen.expectedRecovery * 100).toFixed(2)},${(gen.stdDev * 100).toFixed(2)},${gen.populationSize}\n`;
+            });
+            
+            csv += `\nParameters\n`;
+            csv += `Number of Traits,${params.numTraits}\n`;
+            csv += `Target Recovery (%),${params.targetRecovery}\n`;
+            csv += `Initial Similarity (%),${params.initialSimilarity}\n`;
+            csv += `Confidence Level,${params.confidence * 100}%\n`;
+            csv += `Genetic Map Length (cM),${params.mapLength}\n`;
+            csv += `\nSummary\n`;
+            csv += `Total Backcross Generations,${results.minBackcrosses}\n`;
+            csv += `Total Population Required,${results.totalPopulation}\n`;
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'trait_introgression_results.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function copyResults() {
+            const params = getParams();
+            const results = calculateBreedingScheme(params);
+            
+            let text = `CORN TRAIT INTROGRESSION CALCULATOR RESULTS\n`;
+            text += `${'='.repeat(50)}\n\n`;
+            text += `PARAMETERS:\n`;
+            text += `  Number of Traits: ${params.numTraits}\n`;
+            text += `  Target RP Recovery: ${params.targetRecovery}%\n`;
+            text += `  Initial Similarity: ${params.initialSimilarity}%\n`;
+            text += `  Confidence Level: ${params.confidence * 100}%\n`;
+            text += `  Genetic Map Length: ${params.mapLength} cM\n\n`;
+            text += `RESULTS:\n`;
+            text += `  Backcross Generations Required: ${results.minBackcrosses}\n`;
+            text += `  Total Population Needed: ${results.totalPopulation.toLocaleString()}\n\n`;
+            text += `BREEDING SCHEME:\n`;
+            
+            results.generations.forEach(gen => {
+                text += `  ${gen.name}: ${gen.populationSize.toLocaleString()} plants (${(gen.expectedRecovery * 100).toFixed(1)}% recovery)\n`;
+            });
+            
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Results copied to clipboard!');
+            });
+        }
+
+        // ============================================
+        // TRADE-OFF CHART
+        // ============================================
+
+        function updateMainTradeoffChart(params) {
+            // Show how different population sizes affect achievable recovery and generations needed
+            const S0 = params.initialSimilarity / 100;
+            const L = getEffectiveSegments(params.mapLength);
+            const selPct = params.selectionIntensity || 5;
+            
+            const populations = [25, 50, 100, 200, 300, 500, 750, 1000, 1500, 2000];
+            const targetRecoveries = [0.85, 0.88, 0.90, 0.93, 0.95];
+            const colors = ['#c8e6c9', '#81c784', '#4caf50', '#388e3c', '#1b5e20'];
+            
+            const traces = [];
+            
+            targetRecoveries.forEach((target, i) => {
+                const generations = [];
+                
+                populations.forEach(pop => {
+                    // Find how many generations needed to reach target with this population
+                    let genNeeded = 7; // max (means not achievable)
+                    for (let n = 1; n <= 6; n++) {
+                        const achievable = achievableRecoveryWithPopulation(n, S0, L, pop, selPct);
+                        if (achievable >= target) {
+                            genNeeded = n;
+                            break;
+                        }
+                    }
+                    generations.push(genNeeded > 6 ? null : genNeeded);
+                });
+                
+                traces.push({
+                    x: populations,
+                    y: generations,
+                    mode: 'lines+markers',
+                    name: `${(target * 100).toFixed(0)}% recovery`,
+                    line: { width: 2.5, color: colors[i] },
+                    marker: { size: 8 },
+                    connectgaps: false
+                });
+            });
+            
+            // Mark current selection if in fixed mode
+            if (calculationMode === 'fixed') {
+                const currentPop = params.fixedPopulation;
+                // Find generations needed for 90% target
+                let currentGen = null;
+                for (let n = 1; n <= 6; n++) {
+                    const achievable = achievableRecoveryWithPopulation(n, S0, L, currentPop, selPct);
+                    if (achievable >= 0.90) {
+                        currentGen = n;
+                        break;
+                    }
+                }
+                
+                traces.push({
+                    x: [currentPop],
+                    y: [currentGen],
+                    mode: 'markers',
+                    marker: { size: 18, color: '#f57c00', symbol: 'star', line: { color: 'white', width: 2 } },
+                    name: 'Your selection',
+                    showlegend: true
+                });
+            }
+            
+            Plotly.newPlot('tradeoffChart', traces, {
+                margin: { t: 30, r: 20, b: 60, l: 70 },
+                xaxis: { 
+                    title: 'Population Size per Generation',
+                    type: 'log',
+                    tickvals: [25, 50, 100, 200, 500, 1000, 2000],
+                    ticktext: ['25', '50', '100', '200', '500', '1K', '2K']
+                },
+                yaxis: { 
+                    title: 'Backcross Generations Needed', 
+                    dtick: 1, 
+                    range: [0.5, 6.5],
+                    tickvals: [1, 2, 3, 4, 5, 6]
+                },
+                legend: { x: 0.98, y: 0.02, xanchor: 'right', yanchor: 'bottom', bgcolor: 'rgba(255,255,255,0.8)' },
+                hovermode: 'closest',
+                annotations: [{
+                    x: Math.log10(50),
+                    y: 5.5,
+                    xref: 'x',
+                    yref: 'y',
+                    text: 'More generations<br>(more time)',
+                    showarrow: false,
+                    font: { size: 10, color: '#757575' }
+                }, {
+                    x: Math.log10(1500),
+                    y: 1.5,
+                    xref: 'x',
+                    yref: 'y',
+                    text: 'Fewer generations<br>(less time)',
+                    showarrow: false,
+                    font: { size: 10, color: '#757575' }
+                }]
+            }, { responsive: true });
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+
+        document.getElementById('numTraits').addEventListener('input', function() {
+            document.getElementById('numTraitsValue').textContent = this.value;
+            updateAll();
+        });
+
+        document.getElementById('targetRecovery').addEventListener('input', function() {
+            document.getElementById('targetRecoveryValue').textContent = this.value + '%';
+            updateAll();
+        });
+
+        document.getElementById('initialSimilarity').addEventListener('input', function() {
+            document.getElementById('initialSimilarityValue').textContent = this.value + '%';
+            updateAll();
+        });
+
+        document.getElementById('confidence').addEventListener('change', updateAll);
+        document.getElementById('mapLength').addEventListener('change', updateAll);
+        
+        // Fixed population mode inputs
+        document.getElementById('fixedPopulation').addEventListener('input', updateAll);
+        
+        document.getElementById('selectionIntensity').addEventListener('input', function() {
+            document.getElementById('selectionIntensityValue').textContent = this.value + '%';
+            updateAll();
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', updateAll);
+    </script>
+</body>
+</html>
